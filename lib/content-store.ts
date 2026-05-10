@@ -34,7 +34,9 @@ export async function getSiteContent(): Promise<SiteContent> {
       blobs.blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())[0];
 
     if (blob) {
-      const response = await fetch(blob.url, { cache: "no-store" });
+      const contentUrl = new URL(blob.url);
+      contentUrl.searchParams.set("v", String(blob.uploadedAt.getTime()));
+      const response = await fetch(contentUrl, { cache: "no-store" });
       if (response.ok) {
         return mergeContent(await response.json());
       }
