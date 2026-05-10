@@ -137,11 +137,12 @@ export default async function HomePage() {
         </div>
         <div className="blog-grid">
           {content.blog.map((post) => (
-            <article className="blog-card" key={post.title}>
+            <a className="blog-card" href={`/blog/${post.slug}`} key={post.slug}>
               <time dateTime={post.date}>{post.date}</time>
               <h3>{post.title}</h3>
               <p>{post.summary}</p>
-            </article>
+              <span className="read-more">Read article <ArrowUpRight size={16} /></span>
+            </a>
           ))}
         </div>
       </section>

@@ -117,22 +117,31 @@ export const defaultContent: SiteContent = {
   },
   blog: [
     {
+      slug: "what-product-managers-should-prototype",
       title: "What product managers should prototype before asking engineering",
       date: "2026-05-10",
       summary:
-        "A practical note on using vibe coding to reduce ambiguity, reveal hidden requirements, and improve team conversations."
+        "A practical note on using vibe coding to reduce ambiguity, reveal hidden requirements, and improve team conversations.",
+      body:
+        "The best prototypes are not mini-products. They are decision tools. Before asking engineering for a sprint, a PM can use AI-assisted building to clarify the core flow, expose hidden states, and pressure-test whether the problem is sharp enough.\n\nA useful prototype should answer one or two questions: does the workflow make sense, does the customer language feel natural, and what data or integration assumptions are still unresolved?\n\nWhen shared with engineering, this kind of prototype makes collaboration better because the team is reacting to something concrete without being trapped by it."
     },
     {
+      slug: "simple-roadmap-space-test",
       title: "A simple test for whether a feature deserves roadmap space",
       date: "2026-05-10",
       summary:
-        "How to combine user pain, business leverage, confidence, and delivery cost into an honest prioritization conversation."
+        "How to combine user pain, business leverage, confidence, and delivery cost into an honest prioritization conversation.",
+      body:
+        "Roadmap quality improves when teams separate excitement from evidence. A feature earns space when it has a clear user pain, a believable business upside, enough confidence to act, and a delivery cost the team understands.\n\nThe conversation does not need to become mechanical. A scoring model is useful only when it forces better discussion: why do we believe this, what could make us wrong, and what is the smallest proof we can create next?\n\nThe best roadmap decisions are usually the ones where trade-offs are explicit."
     },
     {
+      slug: "from-customer-quote-to-product-bet",
       title: "From customer quote to product bet",
       date: "2026-05-10",
       summary:
-        "A PM workflow for turning messy research inputs into themes, assumptions, and measurable next bets."
+        "A PM workflow for turning messy research inputs into themes, assumptions, and measurable next bets.",
+      body:
+        "Customer quotes are raw material, not conclusions. A strong PM workflow preserves the exact language, groups related moments into themes, and then turns those themes into assumptions that can be tested.\n\nThe output should be a product bet: a clear customer segment, a behavior you want to change, the intervention you believe will help, and the metric that will tell you whether you were right.\n\nThis keeps discovery connected to delivery without flattening customer nuance."
     }
   ],
   contact: {

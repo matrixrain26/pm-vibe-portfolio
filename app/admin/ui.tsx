@@ -19,6 +19,14 @@ function textToList(value: string) {
     .filter(Boolean);
 }
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function AdminEditor({ initialContent }: Props) {
   const [content, setContent] = useState(initialContent);
   const [message, setMessage] = useState("");
@@ -180,8 +188,10 @@ export default function AdminEditor({ initialContent }: Props) {
           <div className="editor-block" key={`${post.title}-${index}`}>
             <div className="admin-grid">
               <Field label="Title" value={post.title} onChange={(value) => updatePost(index, { ...post, title: value })} />
+              <Field label="Slug" value={post.slug} onChange={(value) => updatePost(index, { ...post, slug: slugify(value) })} />
               <Field label="Date" value={post.date} onChange={(value) => updatePost(index, { ...post, date: value })} />
               <Field area full label="Summary" value={post.summary} onChange={(value) => updatePost(index, { ...post, summary: value })} />
+              <Field area full label="Full post body" value={post.body} onChange={(value) => updatePost(index, { ...post, body: value })} />
             </div>
             <button className="button" type="button" onClick={() => setContent({ ...content, blog: content.blog.filter((_, itemIndex) => itemIndex !== index) })}>
               <Trash2 size={17} /> Remove
@@ -191,7 +201,7 @@ export default function AdminEditor({ initialContent }: Props) {
         <button
           className="button"
           type="button"
-          onClick={() => setContent({ ...content, blog: [...content.blog, { title: "New Post", date: new Date().toISOString().slice(0, 10), summary: "" }] })}
+          onClick={() => setContent({ ...content, blog: [...content.blog, { slug: "new-post", title: "New Post", date: new Date().toISOString().slice(0, 10), summary: "", body: "" }] })}
         >
           <Plus size={17} /> Add post
         </button>

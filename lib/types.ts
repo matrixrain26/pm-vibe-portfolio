@@ -6,9 +6,11 @@ export type Project = {
 };
 
 export type BlogPost = {
+  slug: string;
   title: string;
   date: string;
   summary: string;
+  body: string;
 };
 
 export type SiteContent = {

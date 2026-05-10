@@ -11,7 +11,23 @@ function hasBlobToken() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function mergeContent(content: Partial<SiteContent>): SiteContent {
+  const blog = (content.blog || defaultContent.blog).map((post, index) => ({
+    slug: post.slug || slugify(post.title || `post-${index + 1}`) || `post-${index + 1}`,
+    title: post.title,
+    date: post.date,
+    summary: post.summary,
+    body: post.body || post.summary
+  }));
+
   return {
     ...defaultContent,
     ...content,
@@ -22,6 +38,7 @@ function mergeContent(content: Partial<SiteContent>): SiteContent {
     interestsIntro: { ...defaultContent.interestsIntro, ...content.interestsIntro },
     projectsIntro: { ...defaultContent.projectsIntro, ...content.projectsIntro },
     blogIntro: { ...defaultContent.blogIntro, ...content.blogIntro },
+    blog,
     contact: { ...defaultContent.contact, ...content.contact }
   };
 }
