@@ -1,0 +1,6 @@
+.next
+node_modules
+.env*.local
+.vercel
+data/site-content.local.json
+*.log
