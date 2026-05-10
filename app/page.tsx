@@ -1,6 +1,9 @@
 import { ArrowUpRight, Mail, Sparkles } from "lucide-react";
 import { getSiteContent } from "@/lib/content-store";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const sectionIds = ["home", "about", "interests", "projects", "blog", "contact"] as const;
 
 export default async function HomePage() {

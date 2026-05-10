@@ -28,8 +28,10 @@ function mergeContent(content: Partial<SiteContent>): SiteContent {
 
 export async function getSiteContent(): Promise<SiteContent> {
   if (hasBlobToken()) {
-    const blobs = await list({ prefix: BLOB_NAME, limit: 1 });
-    const blob = blobs.blobs.find((item) => item.pathname === BLOB_NAME);
+    const blobs = await list({ prefix: "site-content", limit: 100 });
+    const blob =
+      blobs.blobs.find((item) => item.pathname === BLOB_NAME) ||
+      blobs.blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())[0];
 
     if (blob) {
       const response = await fetch(blob.url, { cache: "no-store" });
@@ -49,10 +51,12 @@ export async function getSiteContent(): Promise<SiteContent> {
 
 export async function saveSiteContent(content: SiteContent) {
   if (hasBlobToken()) {
-    const existing = await list({ prefix: BLOB_NAME, limit: 10 });
+    const existing = await list({ prefix: "site-content", limit: 100 });
     await Promise.all(existing.blobs.map((blob) => del(blob.url)));
     await put(BLOB_NAME, JSON.stringify(content, null, 2), {
       access: "public",
+      addRandomSuffix: false,
+      cacheControlMaxAge: 0,
       contentType: "application/json"
     });
     return;
