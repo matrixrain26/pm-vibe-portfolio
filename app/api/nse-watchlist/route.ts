@@ -81,14 +81,18 @@ const NAME_TO_STOCK: Record<string, StockInput> = {
   "ab capital": { name: "AB Capital", symbol: "ABCAPITAL.NS" },
   abcapi: { name: "AB Capital", symbol: "ABCAPITAL.NS" },
   "united spirits": { name: "United Spirits", symbol: "UNITDSPR.NS" },
-  unitedspirits: { name: "United Spirits", symbol: "UNITDSPR.NS" }
+  unitedspirits: { name: "United Spirits", symbol: "UNITDSPR.NS" },
+  motherson: { name: "Motherson", symbol: "MOTHERSON.NS" },
+  delhivery: { name: "Delhivery", symbol: "DELHIVERY.NS" }
 };
 
 const NAME_TO_PRIMER: Record<string, StockInput> = {
   nifty50: { name: "Nifty 50", symbol: "^NSEI" },
   "nifty 50": { name: "Nifty 50", symbol: "^NSEI" },
+  cnxmidcap: { name: "CNX Midcap", symbol: "^NSEMDCP50" },
   niftymidcap150: { name: "Nifty Midcap 150", symbol: "NIFTYMIDCAP150.NS" },
   "nifty midcap 150": { name: "Nifty Midcap 150", symbol: "NIFTYMIDCAP150.NS" },
+  cnxsmallcap: { name: "CNX Smallcap", symbol: "^CNXSC" },
   niftysmallcap250: { name: "Nifty Smallcap 250", symbol: "NIFTYSMLCAP250.NS" },
   "nifty smallcap 250": { name: "Nifty Smallcap 250", symbol: "NIFTYSMLCAP250.NS" },
   brent: { name: "Brent", symbol: "BZ=F" },
@@ -363,9 +367,10 @@ function buildStockSections(rows: WatchRow[], failures: string[]) {
   ];
 }
 
-function buildSlackMessage(primerRows: WatchRow[], stockRows: WatchRow[], failures: string[]) {
+function buildSlackMessage(primerRows: WatchRow[], stockRows: WatchRow[], failures: string[], primer: StockInput[]) {
   const date = stockRows[0]?.date ?? primerRows[0]?.date ?? new Date().toISOString().slice(0, 10);
-  const primerFailures = failures.filter((failure) => DEFAULT_PRIMER.some((item) => failure.includes(item.symbol)));
+  const primerSymbols = new Set(primer.map((item) => item.symbol));
+  const primerFailures = failures.filter((failure) => [...primerSymbols].some((symbol) => failure.includes(symbol)));
   const stockFailures = failures.filter((failure) => !primerFailures.includes(failure));
 
   const sections = [
@@ -413,6 +418,6 @@ export async function GET(request: Request) {
     primerRows,
     rows: stockRows,
     failures,
-    slackMessage: buildSlackMessage(primerRows, stockRows, failures)
+    slackMessage: buildSlackMessage(primerRows, stockRows, failures, primer)
   });
 }
