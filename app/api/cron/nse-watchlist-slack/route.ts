@@ -151,11 +151,19 @@ async function loadWatchlist(): Promise<Watchlist> {
 
 async function alreadySent(token: string, date: string) {
   const channel = process.env.SLACK_DM_CHANNEL_ID ?? DEFAULT_SLACK_DM_CHANNEL;
-  const history = await slackApi<{
-    messages?: Array<{ text?: string }>;
-  }>("conversations.history", token, { channel, limit: 20 });
+  try {
+    const history = await slackApi<{
+      messages?: Array<{ text?: string }>;
+    }>("conversations.history", token, { channel, limit: 20 });
 
-  return Boolean(history.messages?.some((message) => message.text?.includes(`NSE Watchlist Summary - ${date}`)));
+    return Boolean(history.messages?.some((message) => message.text?.includes(`NSE Watchlist Summary - ${date}`)));
+  } catch {
+    return false;
+  }
+}
+
+async function testSlackAuth(token: string) {
+  return slackApi<{ team?: string; user?: string; bot_id?: string }>("auth.test", token, {});
 }
 
 async function postSlackMessage(token: string, text: string) {
@@ -170,40 +178,66 @@ async function postSlackMessage(token: string, text: string) {
 }
 
 export async function GET(request: Request) {
-  const expectedSecret = process.env.CRON_SECRET;
-  if (expectedSecret && request.headers.get("authorization") !== `Bearer ${expectedSecret}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  try {
+    const expectedSecret = process.env.CRON_SECRET;
+    if (expectedSecret && request.headers.get("authorization") !== `Bearer ${expectedSecret}`) {
+      return new Response("Unauthorized", { status: 401 });
+    }
 
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) {
+    const token = process.env.SLACK_BOT_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        { ok: false, error: "Missing SLACK_BOT_TOKEN; Vercel Cron cannot post to Slack yet." },
+        { status: 500 }
+      );
+    }
+
+    const url = new URL(request.url);
+    const dryRun = url.searchParams.get("dryRun") === "1";
+    const date = todayInIndia();
+    const auth = dryRun ? await testSlackAuth(token) : null;
+
+    if (!dryRun && await alreadySent(token, date)) {
+      return NextResponse.json({ ok: true, skipped: "already_sent", date });
+    }
+
+    const watchlist = await loadWatchlist();
+    const params = new URLSearchParams({
+      primer: watchlist.primer.join(","),
+      stocks: watchlist.stocks.join(",")
+    });
+    const origin = url.origin;
+    const summaryResponse = await fetch(`${origin}/api/nse-watchlist?${params.toString()}`);
+
+    if (!summaryResponse.ok) {
+      const body = await summaryResponse.text();
+      throw new Error(`nse-watchlist failed ${summaryResponse.status}: ${body}`);
+    }
+
+    const summary = (await summaryResponse.json()) as { slackMessage?: string };
+    if (!summary.slackMessage) throw new Error("nse-watchlist response did not include slackMessage");
+
+    if (dryRun) {
+      return NextResponse.json({
+        ok: true,
+        dryRun,
+        date,
+        source: watchlist.source,
+        slackAuth: {
+          team: auth?.team,
+          user: auth?.user,
+          bot_id: auth?.bot_id
+        },
+        summaryBytes: summary.slackMessage.length
+      });
+    }
+
+    await postSlackMessage(token, summary.slackMessage);
+    return NextResponse.json({ ok: true, date, source: watchlist.source });
+  } catch (error) {
     return NextResponse.json(
-      { ok: false, error: "Missing SLACK_BOT_TOKEN; Vercel Cron cannot post to Slack yet." },
+      { ok: false, error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
-
-  const date = todayInIndia();
-  if (await alreadySent(token, date)) {
-    return NextResponse.json({ ok: true, skipped: "already_sent", date });
-  }
-
-  const watchlist = await loadWatchlist();
-  const params = new URLSearchParams({
-    primer: watchlist.primer.join(","),
-    stocks: watchlist.stocks.join(",")
-  });
-  const origin = new URL(request.url).origin;
-  const summaryResponse = await fetch(`${origin}/api/nse-watchlist?${params.toString()}`);
-
-  if (!summaryResponse.ok) {
-    const body = await summaryResponse.text();
-    throw new Error(`nse-watchlist failed ${summaryResponse.status}: ${body}`);
-  }
-
-  const summary = (await summaryResponse.json()) as { slackMessage?: string };
-  if (!summary.slackMessage) throw new Error("nse-watchlist response did not include slackMessage");
-
-  await postSlackMessage(token, summary.slackMessage);
-  return NextResponse.json({ ok: true, date, source: watchlist.source });
 }
