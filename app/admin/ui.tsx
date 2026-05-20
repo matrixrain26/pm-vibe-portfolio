@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, Plus, Save, Trash2 } from "lucide-react";
+import { LineChart, LogOut, Plus, Save, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import type { SiteContent } from "@/lib/types";
 
@@ -57,6 +58,11 @@ export default function AdminEditor({ initialContent }: Props) {
       <p className="eyebrow">Admin</p>
       <h1>Content Studio</h1>
       <p>Edit every public section of the site. On Vercel, the same JSON content is stored in Vercel Blob.</p>
+      <div className="admin-actions start">
+        <Link className="button" href="/admin/watchlist">
+          <LineChart size={17} /> NSE watchlist
+        </Link>
+      </div>
 
       <section className="admin-card">
         <h3>Navigation</h3>

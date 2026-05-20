@@ -1,39 +1,14 @@
 import { NextResponse } from "next/server";
+import { getWatchlist } from "@/lib/watchlist-store";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const DEFAULT_CANVAS_ID = "F0AFV8GC9H6";
 const DEFAULT_SLACK_CHANNEL = "U038M743PJA";
 const DEFAULT_SLACK_DM_CHANNEL = "D039HKCH7UY";
-const DEFAULT_PRIMER = "nifty50,cnxsmallcap,cnxmidcap,brent,indiavix";
-const DEFAULT_STOCKS = [
-  "Jiofin",
-  "gmrairport",
-  "paytm",
-  "hyndaimotors",
-  "irfc",
-  "biocon",
-  "glenmark",
-  "rblbank",
-  "bandhan bank",
-  "tata motors passenger vehicle (tmpv)",
-  "360 one wam",
-  "AB Capital",
-  "United Spirits",
-  "Motherson",
-  "Delhivery"
-].join(",");
-
 type SlackApiResponse<T> = T & {
   ok: boolean;
   error?: string;
-};
-
-type Watchlist = {
-  primer: string[];
-  stocks: string[];
-  source: "canvas" | "env-fallback";
 };
 
 function todayInIndia() {
@@ -43,45 +18,6 @@ function todayInIndia() {
     month: "2-digit",
     day: "2-digit"
   }).format(new Date());
-}
-
-function splitList(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function parseCanvasMarkdown(markdown: string): Watchlist | null {
-  const lines = markdown
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const primer: string[] = [];
-  const stocks: string[] = [];
-  let section: "primer" | "stocks" | null = null;
-
-  for (const line of lines) {
-    const normalized = line.replace(/^#+\s*/, "").replace(/\*/g, "").trim().toLowerCase();
-    if (normalized === "primer") {
-      section = "primer";
-      continue;
-    }
-    if (normalized === "stocks") {
-      section = "stocks";
-      continue;
-    }
-    if (!section || normalized === "live tracking") continue;
-    if (section === "primer") primer.push(line);
-    if (section === "stocks") stocks.push(line);
-  }
-
-  const dedupe = (items: string[]) => [...new Set(items)];
-  const dedupedPrimer = dedupe(primer);
-  const dedupedStocks = dedupe(stocks);
-
-  if (!dedupedPrimer.length || !dedupedStocks.length) return null;
-  return { primer: dedupedPrimer, stocks: dedupedStocks, source: "canvas" };
 }
 
 async function slackApi<T>(method: string, token: string, body: Record<string, unknown>) {
@@ -98,60 +34,6 @@ async function slackApi<T>(method: string, token: string, body: Record<string, u
     throw new Error(`${method}: ${payload.error ?? "unknown Slack API error"}`);
   }
   return payload;
-}
-
-async function readCanvasMarkdown(token: string, canvasId: string) {
-  const info = await slackApi<{
-    file?: {
-      preview?: string;
-      plain_text?: string;
-      editable?: boolean;
-      url_private?: string;
-      url_private_download?: string;
-    };
-  }>("files.info", token, { file: canvasId });
-
-  const file = info.file;
-  const inline = file?.plain_text ?? file?.preview;
-  if (inline?.trim()) return inline;
-
-  const url = file?.url_private_download ?? file?.url_private;
-  if (!url) return null;
-
-  const response = await fetch(url, {
-    headers: { authorization: `Bearer ${token}` }
-  });
-  if (!response.ok) return null;
-
-  const contentType = response.headers.get("content-type") ?? "";
-  const body = await response.text();
-  if (contentType.includes("text") || body.includes("**Primer**") || body.includes("Primer")) {
-    return body;
-  }
-
-  return null;
-}
-
-async function loadWatchlist(): Promise<Watchlist> {
-  const token = process.env.SLACK_BOT_TOKEN;
-  const canvasId = process.env.SLACK_CANVAS_ID ?? DEFAULT_CANVAS_ID;
-
-  if (token) {
-    try {
-      const markdown = await readCanvasMarkdown(token, canvasId);
-      const parsed = markdown ? parseCanvasMarkdown(markdown) : null;
-      if (parsed) return parsed;
-    } catch {
-      // Slack's public Web API may not expose every Canvas body to bot tokens.
-      // In that case, keep delivery reliable by using the configured fallback list.
-    }
-  }
-
-  return {
-    primer: splitList(process.env.WATCHLIST_PRIMER ?? DEFAULT_PRIMER),
-    stocks: splitList(process.env.WATCHLIST_STOCKS ?? DEFAULT_STOCKS),
-    source: "env-fallback"
-  };
 }
 
 async function alreadySent(token: string, date: string) {
@@ -206,7 +88,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, skipped: "already_sent", date });
     }
 
-    const watchlist = await loadWatchlist();
+    const watchlist = await getWatchlist();
     const params = new URLSearchParams({
       primer: watchlist.primer.join(","),
       stocks: watchlist.stocks.join(",")

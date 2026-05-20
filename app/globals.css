@@ -451,6 +451,13 @@ p {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.admin-title-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -484,6 +491,32 @@ p {
   resize: vertical;
 }
 
+.watchlist-textarea {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  min-height: 180px;
+}
+
+.watchlist-textarea.stocks {
+  min-height: 360px;
+}
+
+.watchlist-meta {
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.watchlist-meta span {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+
 .editor-block {
   border-top: 1px solid var(--line);
   margin-top: 22px;
@@ -495,6 +528,10 @@ p {
   gap: 12px;
   justify-content: flex-end;
   margin-top: 24px;
+}
+
+.admin-actions.start {
+  justify-content: flex-start;
 }
 
 .message {
