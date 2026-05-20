@@ -137,9 +137,14 @@ async function loadWatchlist(): Promise<Watchlist> {
   const canvasId = process.env.SLACK_CANVAS_ID ?? DEFAULT_CANVAS_ID;
 
   if (token) {
-    const markdown = await readCanvasMarkdown(token, canvasId);
-    const parsed = markdown ? parseCanvasMarkdown(markdown) : null;
-    if (parsed) return parsed;
+    try {
+      const markdown = await readCanvasMarkdown(token, canvasId);
+      const parsed = markdown ? parseCanvasMarkdown(markdown) : null;
+      if (parsed) return parsed;
+    } catch {
+      // Slack's public Web API may not expose every Canvas body to bot tokens.
+      // In that case, keep delivery reliable by using the configured fallback list.
+    }
   }
 
   return {
