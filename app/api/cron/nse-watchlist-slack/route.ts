@@ -49,6 +49,10 @@ async function alreadySent(token: string, date: string) {
   }
 }
 
+function summaryDate(text: string) {
+  return text.match(/NSE Watchlist Summary - (\d{4}-\d{2}-\d{2})/)?.[1] ?? todayInIndia();
+}
+
 async function testSlackAuth(token: string) {
   return slackApi<{ team?: string; user?: string; bot_id?: string }>("auth.test", token, {});
 }
@@ -84,10 +88,6 @@ export async function GET(request: Request) {
     const date = todayInIndia();
     const auth = dryRun ? await testSlackAuth(token) : null;
 
-    if (!dryRun && await alreadySent(token, date)) {
-      return NextResponse.json({ ok: true, skipped: "already_sent", date });
-    }
-
     const watchlist = await getWatchlist();
     const params = new URLSearchParams({
       primer: watchlist.primer.join(","),
@@ -103,12 +103,14 @@ export async function GET(request: Request) {
 
     const summary = (await summaryResponse.json()) as { slackMessage?: string };
     if (!summary.slackMessage) throw new Error("nse-watchlist response did not include slackMessage");
+    const marketDate = summaryDate(summary.slackMessage);
 
     if (dryRun) {
       return NextResponse.json({
         ok: true,
         dryRun,
         date,
+        marketDate,
         source: watchlist.source,
         slackAuth: {
           team: auth?.team,
@@ -119,8 +121,12 @@ export async function GET(request: Request) {
       });
     }
 
+    if (await alreadySent(token, marketDate)) {
+      return NextResponse.json({ ok: true, skipped: "already_sent", date, marketDate });
+    }
+
     await postSlackMessage(token, summary.slackMessage);
-    return NextResponse.json({ ok: true, date, source: watchlist.source });
+    return NextResponse.json({ ok: true, date, marketDate, source: watchlist.source });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : String(error) },
