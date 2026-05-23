@@ -15,8 +15,8 @@ jobs:
           CRON_SECRET: ${{ secrets.NSE_WATCHLIST_CRON_SECRET }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
-            echo "Missing NSE_WATCHLIST_CRON_SECRET repository secret"
-            exit 1
+            echo "NSE_WATCHLIST_CRON_SECRET is not configured; skipping fallback trigger."
+            exit 0
           fi
 
           curl --fail-with-body \
