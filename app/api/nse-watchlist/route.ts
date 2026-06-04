@@ -157,6 +157,49 @@ function line(row: WatchRow, read: string) {
   return `- *${row.stock}* \`${row.close.toFixed(2)}\` \`${formatPct(row.gainPct)}\` | Vol \`${row.volPct}%\` | ${emaStatus(row)} | ${row.candle} | ${read}`;
 }
 
+function displayNameFromSymbol(symbol: string) {
+  return symbol
+    .replace(".NS", "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function toYahooSymbol(value: string) {
+  const symbol = value.trim().toUpperCase();
+  if (!symbol) return "";
+  if (symbol.startsWith("^") || symbol.includes("=") || symbol.endsWith(".NS")) return symbol;
+  return `${symbol}.NS`;
+}
+
+function symbolFromName(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/&/g, "AND")
+    .replace(/[^A-Z0-9-]/g, "");
+}
+
+function parseMappedOrSymbol(raw: string, mapping: Record<string, StockInput>) {
+  const trimmed = raw.trim();
+  const mapped = mapping[trimmed.toLowerCase()];
+  if (mapped) return mapped;
+
+  const explicit = trimmed.match(/^(.+?)\s*(?:[:|=])\s*([A-Za-z0-9^&.\-=]+)$/);
+  if (explicit) {
+    return {
+      name: explicit[1].trim(),
+      symbol: toYahooSymbol(explicit[2])
+    };
+  }
+
+  const symbol = toYahooSymbol(trimmed.includes(" ") ? symbolFromName(trimmed) : trimmed);
+  return {
+    name: trimmed.includes(".") || trimmed === trimmed.toUpperCase() ? displayNameFromSymbol(symbol) : trimmed,
+    symbol
+  };
+}
+
 function normalizeList(rawNames: string | null, rawSymbols: string | null, mapping: Record<string, StockInput>, fallback: StockInput[]) {
   if (rawSymbols) {
     const seen = new Set<string>();
@@ -164,16 +207,13 @@ function normalizeList(rawNames: string | null, rawSymbols: string | null, mappi
       .split(",")
       .map((raw) => raw.trim())
       .filter(Boolean)
-      .map((symbol) => {
-        if (symbol.startsWith("^") || symbol.includes("=") || symbol.endsWith(".NS")) return symbol;
-        return `${symbol}.NS`;
-      })
+      .map(toYahooSymbol)
       .filter((symbol) => {
         if (seen.has(symbol)) return false;
         seen.add(symbol);
         return true;
       })
-      .map((symbol) => ({ name: symbol.replace(".NS", ""), symbol }));
+      .map((symbol) => ({ name: displayNameFromSymbol(symbol), symbol }));
   }
 
   if (!rawNames) return fallback;
@@ -181,9 +221,10 @@ function normalizeList(rawNames: string | null, rawSymbols: string | null, mappi
   const seen = new Set<string>();
   const stocks = rawNames
     .split(",")
-    .map((raw) => raw.trim().toLowerCase())
-    .map((name) => mapping[name])
-    .filter((stock): stock is StockInput => Boolean(stock))
+    .map((raw) => raw.trim())
+    .filter(Boolean)
+    .map((name) => parseMappedOrSymbol(name, mapping))
+    .filter((stock) => Boolean(stock.symbol))
     .filter((stock) => {
       if (seen.has(stock.symbol)) return false;
       seen.add(stock.symbol);
