@@ -94,6 +94,7 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const dryRun = url.searchParams.get("dryRun") === "1";
+    const includeMessage = url.searchParams.get("includeMessage") === "1";
     const date = todayInIndia();
     const auth = dryRun ? await testSlackAuth(token) : null;
     console.log("nse-watchlist-cron:start", { date, dryRun });
@@ -132,7 +133,8 @@ export async function GET(request: Request) {
           user: auth?.user,
           bot_id: auth?.bot_id
         },
-        summaryBytes: summary.slackMessage.length
+        summaryBytes: summary.slackMessage.length,
+        ...(includeMessage ? { slackMessage: summary.slackMessage } : {})
       });
     }
 
