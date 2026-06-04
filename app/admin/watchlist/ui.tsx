@@ -95,7 +95,7 @@ export default function WatchlistEditor({ initialWatchlist }: Props) {
             <textarea className="watchlist-textarea" value={primer} onChange={(event) => setPrimer(event.target.value)} />
           </div>
           <div className="field full">
-            <label>Stocks, one per line</label>
+            <label>Stocks, one per line. Use Name: SYMBOL for new or ambiguous names.</label>
             <textarea className="watchlist-textarea stocks" value={stocks} onChange={(event) => setStocks(event.target.value)} />
           </div>
         </div>
