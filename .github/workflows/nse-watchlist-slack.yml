@@ -3,6 +3,9 @@ name: NSE Watchlist Slack Summary
 on:
   schedule:
     - cron: "5 10 * * 1-5"
+    - cron: "20 10 * * 1-5"
+    - cron: "45 10 * * 1-5"
+    - cron: "30 11 * * 1-5"
   workflow_dispatch:
 
 jobs:

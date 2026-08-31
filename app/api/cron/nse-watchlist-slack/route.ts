@@ -20,15 +20,6 @@ function todayInIndia() {
   }).format(new Date());
 }
 
-function isWeekdayInIndia() {
-  const day = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Kolkata",
-    weekday: "short"
-  }).format(new Date());
-
-  return day !== "Sat" && day !== "Sun";
-}
-
 async function slackApi<T>(method: string, token: string, body: Record<string, unknown>) {
   const response = await fetch(`https://slack.com/api/${method}`, {
     method: "POST",
@@ -98,11 +89,6 @@ export async function GET(request: Request) {
     const date = todayInIndia();
     const auth = dryRun ? await testSlackAuth(token) : null;
     console.log("nse-watchlist-cron:start", { date, dryRun });
-
-    if (!dryRun && !isWeekdayInIndia()) {
-      console.log("nse-watchlist-cron:skip-weekend", { date });
-      return NextResponse.json({ ok: true, skipped: "weekend", date });
-    }
 
     const watchlist = await getWatchlist();
     const params = new URLSearchParams({
